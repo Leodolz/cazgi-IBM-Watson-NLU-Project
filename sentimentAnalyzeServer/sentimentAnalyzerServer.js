@@ -12,20 +12,39 @@ app.get("/",(req,res)=>{
   });
 
 app.get("/url/emotion", (req,res) => {
-    
-    analyzeNluMessage(null, req.query.url, 'emotion', res);
+    let callback = (error, resultData) => {
+        if(error)
+            res.status(500).send("Something went wrong!");
+        res.send(JSON.stringify(resultData.emotion.document.emotion), null, 2);
+    };
+    analyzeNluMessage(null, req.query.url, 'emotion', callback);
 });
 
 app.get("/url/sentiment", (req,res) => {
-    return res.send("url sentiment for "+req.query.url);
+    let callback = (error, resultData) => {
+        if(error)
+            res.status(500).send("Something went wrong!");
+        res.send(JSON.stringify(resultData.sentiment.document));
+    };
+    analyzeNluMessage(null, req.query.url, 'sentiment', callback);
 });
 
 app.get("/text/emotion", (req,res) => {
-    analyzeNluMessage(req.query.text, null, 'emotion', res);
+    let callback = (error, resultData) => {
+        if(error)
+            res.status(500).send("Something went wrong!");
+        res.send(JSON.stringify(resultData.emotion.document.emotion), null, 2);
+    };
+    analyzeNluMessage(req.query.text, null, 'emotion', callback);
 });
 
 app.get("/text/sentiment", (req,res) => {
-    return res.send("text sentiment for "+req.query.text);
+    let callback = (error, resultData) => {
+        if(error)
+            res.status(500).send("Something went wrong!");
+    res.send(JSON.stringify(resultData.sentiment.document));
+    };
+    analyzeNluMessage(req.query.text, null, 'sentiment', callback);
 });
 
 let server = app.listen(8080, () => {
@@ -50,7 +69,7 @@ function getNLUInstance() {
     return naturalLanguageUnderstanding;
 }
 
-const analyzeNluMessage = (text, url, type, res) =>
+function analyzeNluMessage(text, url, type, callback)
 {
     let nluInstance = getNLUInstance();
     let analyzeParams = {features: {}};
@@ -65,18 +84,12 @@ const analyzeNluMessage = (text, url, type, res) =>
     }
     nluInstance.analyze(analyzeParams)
     .then(analysisResults => {
-        let result = JSON.stringify(analysisResults.result,null,2);
-        console.log(result);
-        res.end(result);
+        let result = analysisResults.result;
+        callback(null, result);
   })
   .catch(err => {
       console.log('error: ', err);
-      res.end(JSON.stringify(
-          {
-              error: err.code,
-              message: err.message
-          }
-      ));
+      callback(err, null);
   });
 
 }
