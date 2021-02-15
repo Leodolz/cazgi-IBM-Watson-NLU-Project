@@ -1,5 +1,6 @@
 const express = require('express');
 const app = new express();
+require('dotenv').config();
 
 app.use(express.static('client'))
 
@@ -11,8 +12,8 @@ app.get("/",(req,res)=>{
   });
 
 app.get("/url/emotion", (req,res) => {
-
-    return res.send({"happy":"90","sad":"10"});
+    
+    analyzeNluMessage(null, req.query.url, 'emotion', res);
 });
 
 app.get("/url/sentiment", (req,res) => {
@@ -20,7 +21,7 @@ app.get("/url/sentiment", (req,res) => {
 });
 
 app.get("/text/emotion", (req,res) => {
-    return res.send({"happy":"10","sad":"90"});
+    analyzeNluMessage(req.query.text, null, 'emotion', res);
 });
 
 app.get("/text/sentiment", (req,res) => {
@@ -47,5 +48,36 @@ function getNLUInstance() {
     });
 
     return naturalLanguageUnderstanding;
+}
+
+const analyzeNluMessage = (text, url, type, res) =>
+{
+    let nluInstance = getNLUInstance();
+    let analyzeParams = {features: {}};
+    analyzeParams.features[type] = {};
+    if(text === null)
+    {
+        analyzeParams.url = url;
+    }
+    else 
+    {
+        analyzeParams.text = text;
+    }
+    nluInstance.analyze(analyzeParams)
+    .then(analysisResults => {
+        let result = JSON.stringify(analysisResults.result,null,2);
+        console.log(result);
+        res.end(result);
+  })
+  .catch(err => {
+      console.log('error: ', err);
+      res.end(JSON.stringify(
+          {
+              error: err.code,
+              message: err.message
+          }
+      ));
+  });
+
 }
 
